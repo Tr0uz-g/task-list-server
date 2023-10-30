@@ -1,50 +1,64 @@
 const express = require('express');
-const jwt = require('jsonwebtoken');
-const app = express();
 const bodyParser = require('body-parser');
+const app = express();
+const port = 3000;
+
 app.use(bodyParser.json());
 
-
-const users = [
-    { username: 'usuario1', password: 'contrasena1' },
-    { username: 'usuario2', password: 'contrasena2' },
+//tareas
+let tasks = [
+  { id: 1, title: 'Completar proyecto', completed: false },
+  { id: 2, title: 'Ir al supermercado', completed: true },
 ];
 
 
-const JWT_SECRET = process.env.JWT_SECRET || 'secreto_predeterminado';
-
-app.post('/login', (req, res) => {
-    const { username, password } = req.body;
-    
-    const user = users.find(u => u.username === username && u.password === password);
-    if (!user) {
-        return res.status(401).json({ error: 'Credenciales incorrectas' });
-    }
-
-
-    const token = jwt.sign({ username }, JWT_SECRET);
-    res.json({ token });
-});
-
-app.get('/ruta-protegida', (req, res) => {
-    const token = req.headers.authorization;
-
-    if (!token) {
-        return res.status(401).json({ error: 'Token no proporcionado' });
-    }
-
-    jwt.verify(token, JWT_SECRET, (err, decoded) => {
-        if (err) {
-            return res.status(403).json({ error: 'Token inválido' });
-        }
-
-        
-        res.json({ mensaje: 'Acceso autorizado' });
-    });
+app.get('/tasks', (req, res) => {
+  res.json(tasks);
 });
 
 
-const port = 3000;
+app.post('/tasks', (req, res) => {
+  const newTask = req.body;
+  tasks.push(newTask);
+  res.status(201).json(newTask);
+});
+
+
+app.get('/tasks/:id', (req, res) => {
+  const taskId = parseInt(req.params.id);
+  const task = tasks.find((t) => t.id === taskId);
+  if (task) {
+    res.json(task);
+  } else {
+    res.status(404).json({ message: 'Tarea no encontrada' });
+  }
+});
+
+
+app.put('/tasks/:id', (req, res) => {
+  const taskId = parseInt(req.params.id);
+  const updatedTask = req.body;
+  const taskIndex = tasks.findIndex((t) => t.id === taskId);
+  if (taskIndex !== -1) {
+    tasks[taskIndex] = updatedTask;
+    res.json(updatedTask);
+  } else {
+    res.status(404).json({ message: 'Tarea no encontrada' });
+  }
+});
+
+
+app.delete('/tasks/:id', (req, res) => {
+  const taskId = parseInt(req.params.id);
+  const taskIndex = tasks.findIndex((t) => t.id === taskId);
+  if (taskIndex !== -1) {
+    tasks.splice(taskIndex, 1);
+    res.status(204).send();
+  } else {
+    res.status(404).json({ message: 'Tarea no encontrada' });
+  }
+});
+
 app.listen(port, () => {
-    console.log(`Servidor en ejecución en el puerto ${port}`);
+  console.log(`Servidor corriendo en el puerto ${port}`);
 });
